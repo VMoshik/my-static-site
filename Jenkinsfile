@@ -2,53 +2,46 @@ pipeline {
     agent any
 
     environment {
-        ECR_REPO = "547694239239.dkr.ecr.ap-southeast-1.amazonaws.com/caringup_demo"
-        IMAGE_TAG = "latest"
-        AWS_REGION = "ap-southeast-1"
+        AWS_ACCOUNT_ID = '547694239239'
+        AWS_REGION = 'ap-southeast-1'
+        ECR_REPO = "${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/caringup_demo"
+        IMAGE_TAG = 'latest'  // you can make this dynamic if needed
+        EKS_CLUSTER_NAME = 'your-eks-cluster-name'  // Replace with your actual EKS cluster name
     }
 
     stages {
-        stage('Checkout') {
-            steps {
-                git branch: 'main', 
-                    url: 'https://github.com/VMoshik/my-static-site.git', 
-                    credentialsId: 'Github'
-            }
-        }
-
         stage('Build Docker Image') {
             steps {
-                sh """
-                    docker build -t $ECR_REPO:$IMAGE_TAG .
-                """
+                sh 'docker build -t ${ECR_REPO}:${IMAGE_TAG} .'
             }
         }
-
-        stage('Push to ECR') {
+        
+        stage('Login to ECR') {
             steps {
-                sh """
-                    aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin 547694239239.dkr.ecr.$AWS_REGION.amazonaws.com
-                    docker push $ECR_REPO:$IMAGE_TAG
-                """
+                sh '''
+                aws ecr get-login-password --region ${AWS_REGION} | \
+                docker login --username AWS --password-stdin ${ECR_REPO}
+                '''
             }
         }
-
-        stage('Deploy to EKS') {
+        
+        stage('Push Docker Image') {
             steps {
-                sh """
-                    kubectl apply -f deployment.yaml
-                    kubectl apply -f service.yaml
-                """
+                sh 'docker push ${ECR_REPO}:${IMAGE_TAG}'
             }
         }
-    }
 
-    post {
-        success {
-            echo '✅ Deployment succeeded!'
+        stage('Configure kubectl') {
+            steps {
+                sh 'aws eks --region ${AWS_REGION} update-kubeconfig --name ${demo-eks}'
+            }
         }
-        failure {
-            echo '❌ Deployment failed!'
+        
+        stage('Deploy to Kubernetes') {
+            steps {
+                sh 'kubectl apply -f k8s/deployment.yaml'
+                sh 'kubectl apply -f k8s/service.yaml'
+            }
         }
     }
 }
