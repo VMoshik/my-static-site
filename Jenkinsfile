@@ -2,17 +2,18 @@ pipeline {
   agent any
 
   environment {
-    AWS_REGION = 'ap-southeast-1'                       // Update if needed
-    ECR_REGISTRY = '547694239239.dkr.ecr.ap-southeast-1.amazonaws.com/caringup_demo'
+    AWS_REGION = 'ap-southeast-1'
+    AWS_ACCOUNT_ID = '547694239239'
     ECR_REPO = 'caringup_demo'
     IMAGE_TAG = 'latest'
     CLUSTER_NAME = 'demo-eks'
+    ECR_REGISTRY = "${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com"
   }
 
   stages {
     stage('Clone Repository') {
       steps {
-        git 'https://github.com/VMoshik/my-static-site.git' // Replace with your repo URL
+        git 'https://github.com/VMoshik/my-static-site.git'
       }
     }
 
