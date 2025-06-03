@@ -1,14 +1,11 @@
-# Use official NGINX image
+# Use an official lightweight image
 FROM nginx:alpine
 
-# Clean default nginx files
-RUN rm -rf /usr/share/nginx/html/*
-
-# Copy your website files to nginx default directory
+# Copy your static site files into Nginx's public folder
 COPY . /usr/share/nginx/html
 
 # Expose port 80
 EXPOSE 80
 
-# Start NGINX in foreground
+# Start Nginx server
 CMD ["nginx", "-g", "daemon off;"]
