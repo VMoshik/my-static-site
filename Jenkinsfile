@@ -1,64 +1,53 @@
 pipeline {
-  agent any
+    agent any
 
-  environment {
-    AWS_REGION = 'ap-southeast-1'
-    ECR_REGISTRY = '547694239239.dkr.ecr.ap-southeast-1.amazonaws.com'
-    ECR_REPO = 'caringup_demo'
-    IMAGE_TAG = 'latest'
-    CLUSTER_NAME = 'demo-eks'
-  }
-
-  stages {
-    stage('Clone Repository') {
-      steps {
-        git 'https://github.com/VMoshik/my-static-site.git'
-      }
+    triggers {
+        githubPush()
     }
 
-    stage('Debug Workspace') {
-      steps {
-        sh 'ls -l my-static-site/'
-      }
+    environment {
+        ECR_REPO = "547694239239.dkr.ecr.ap-southeast-1.amazonaws.com/caringup_demo"
+        IMAGE_TAG = "latest"
+        AWS_REGION = "ap-southeast-1"
+        AWS_ACCOUNT_ID = "547694239239"
     }
 
-    stage('Build Docker Image') {
-      steps {
-        dir('my-static-site') {
-          sh 'docker build -t $ECR_REPO:$IMAGE_TAG .'
+    stages {
+        stage('Checkout') {
+            steps {
+                git url: 'https://github.com/VMoshik/my-static-site.git', credentialsId: 'Github'
+            }
         }
-      }
-    }
 
-    stage('Push to ECR') {
-      steps {
-        sh '''
-          aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $ECR_REGISTRY
-          docker tag $ECR_REPO:$IMAGE_TAG $ECR_REGISTRY/$ECR_REPO:$IMAGE_TAG
-          docker push $ECR_REGISTRY/$ECR_REPO:$IMAGE_TAG
-        '''
-      }
-    }
-
-    stage('Deploy to EKS') {
-      steps {
-        dir('my-static-site') {
-          sh '''
-            aws eks update-kubeconfig --region $AWS_REGION --name $CLUSTER_NAME
-            kubectl apply -f deployment.yaml
-            kubectl apply -f service.yaml
-          '''
+        stage('Build Docker Image') {
+            steps {
+                sh 'docker build -t $ECR_REPO:$IMAGE_TAG .'
+            }
         }
-      }
-    }
-  }
 
-  post {
-    success {
-      echo '✅ Deployment successful!'
+        stage('Push to ECR') {
+            steps {
+                sh '''
+                aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com
+                docker push $ECR_REPO:$IMAGE_TAG
+                '''
+            }
+        }
+
+        stage('Deploy to EKS') {
+            steps {
+                sh 'kubectl apply -f deployment.yaml'
+                sh 'kubectl apply -f service.yaml'
+            }
+        }
     }
-    failure {
-      echo '❌ Deployment failed!'
+
+    post {
+        success {
+            echo '✅ Deployment succeeded!'
+        }
+        failure {
+            echo '❌ Deployment failed!'
+        }
     }
-  }
 }
