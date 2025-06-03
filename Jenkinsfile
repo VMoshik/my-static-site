@@ -18,9 +18,7 @@ pipeline {
 
     stage('Build Docker Image') {
       steps {
-        dir('my-static-site') {
-          sh 'docker build -t $ECR_REPO:$IMAGE_TAG .'
-        }
+        sh 'docker build -t $ECR_REPO:$IMAGE_TAG ./my-static-site'
       }
     }
 
