@@ -3,11 +3,10 @@ pipeline {
 
   environment {
     AWS_REGION = 'ap-southeast-1'
-    AWS_ACCOUNT_ID = '547694239239'
+    ECR_REGISTRY = '547694239239.dkr.ecr.ap-southeast-1.amazonaws.com'
     ECR_REPO = 'caringup_demo'
     IMAGE_TAG = 'latest'
     CLUSTER_NAME = 'demo-eks'
-    ECR_REGISTRY = "${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com"
   }
 
   stages {
@@ -19,7 +18,9 @@ pipeline {
 
     stage('Build Docker Image') {
       steps {
-        sh 'docker build -t $ECR_REPO:$IMAGE_TAG .'
+        dir('my-static-site') {
+          sh 'docker build -t $ECR_REPO:$IMAGE_TAG .'
+        }
       }
     }
 
@@ -37,12 +38,23 @@ pipeline {
 
     stage('Deploy to EKS') {
       steps {
-        sh '''
-        aws eks update-kubeconfig --region $AWS_REGION --name $CLUSTER_NAME
-        kubectl apply -f deployment.yaml
-        kubectl apply -f service.yaml
-        '''
+        dir('my-static-site') {
+          sh '''
+          aws eks update-kubeconfig --region $AWS_REGION --name $CLUSTER_NAME
+          kubectl apply -f deployment.yaml
+          kubectl apply -f service.yaml
+          '''
+        }
       }
+    }
+  }
+
+  post {
+    success {
+      echo '✅ Deployment successful!'
+    }
+    failure {
+      echo '❌ Deployment failed!'
     }
   }
 }
