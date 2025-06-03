@@ -6,7 +6,7 @@ pipeline {
         AWS_REGION = 'ap-southeast-1'
         ECR_REPO = "${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/caringup_demo"
         IMAGE_TAG = 'latest'  // you can make this dynamic if needed
-        EKS_CLUSTER_NAME = 'your-eks-cluster-name'  // Replace with your actual EKS cluster name
+        EKS_CLUSTER_NAME = 'demo-eks'  // Replace with your actual EKS cluster name
     }
 
     stages {
