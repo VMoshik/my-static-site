@@ -18,18 +18,20 @@ pipeline {
 
     stage('Build Docker Image') {
       steps {
-        sh 'docker build -t $ECR_REPO:$IMAGE_TAG ./my-static-site'
+        dir('my-static-site') {
+          sh 'docker build -t $ECR_REPO:$IMAGE_TAG .'
+        }
       }
     }
 
     stage('Push to ECR') {
       steps {
         sh '''
-        aws ecr get-login-password --region $AWS_REGION | \
-        docker login --username AWS --password-stdin $ECR_REGISTRY
+          aws ecr get-login-password --region $AWS_REGION | \
+          docker login --username AWS --password-stdin $ECR_REGISTRY
 
-        docker tag $ECR_REPO:$IMAGE_TAG $ECR_REGISTRY/$ECR_REPO:$IMAGE_TAG
-        docker push $ECR_REGISTRY/$ECR_REPO:$IMAGE_TAG
+          docker tag $ECR_REPO:$IMAGE_TAG $ECR_REGISTRY/$ECR_REPO:$IMAGE_TAG
+          docker push $ECR_REGISTRY/$ECR_REPO:$IMAGE_TAG
         '''
       }
     }
@@ -38,9 +40,9 @@ pipeline {
       steps {
         dir('my-static-site') {
           sh '''
-          aws eks update-kubeconfig --region $AWS_REGION --name $CLUSTER_NAME
-          kubectl apply -f deployment.yaml
-          kubectl apply -f service.yaml
+            aws eks update-kubeconfig --region $AWS_REGION --name $CLUSTER_NAME
+            kubectl apply -f deployment.yaml
+            kubectl apply -f service.yaml
           '''
         }
       }
