@@ -1,12 +1,12 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: demo-nginx-service
+  name: custom-website-service
 spec:
-  type: LoadBalancer
   selector:
-    app: demo-nginx
+    app: custom-website
   ports:
     - protocol: TCP
-      port: 80          # External port
-      targetPort: 80    # Port on the Pod/container
+      port: 80
+      targetPort: 80
+  type: LoadBalancer
