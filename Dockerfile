@@ -1,11 +1,10 @@
-# Use an official lightweight image
 FROM nginx:alpine
 
-# Copy your static site files into Nginx's public folder
 COPY . /usr/share/nginx/html
 
-# Expose port 80
+# Replace default index.html with index-demo.html (make demo the default homepage)
+RUN mv /usr/share/nginx/html/index-demo.html /usr/share/nginx/html/index.html
+
 EXPOSE 80
 
-# Start Nginx server
 CMD ["nginx", "-g", "daemon off;"]
