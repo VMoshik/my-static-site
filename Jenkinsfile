@@ -5,8 +5,8 @@ pipeline {
         AWS_ACCOUNT_ID = '547694239239'
         AWS_REGION = 'ap-southeast-1'
         ECR_REPO = "${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/caringup_demo"
-        IMAGE_TAG = 'latest'  // you can make this dynamic if needed
-        EKS_CLUSTER_NAME = 'demo-eks'  // Replace with your actual EKS cluster name
+        IMAGE_TAG = 'latest'
+        EKS_CLUSTER_NAME = 'demo-eks'   // updated here
     }
 
     stages {
@@ -20,7 +20,7 @@ pipeline {
             steps {
                 sh '''
                 aws ecr get-login-password --region ${AWS_REGION} | \
-                docker login --username AWS --password-stdin ${ECR_REPO}
+                docker login --username AWS --password-stdin ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com
                 '''
             }
         }
@@ -30,10 +30,10 @@ pipeline {
                 sh 'docker push ${ECR_REPO}:${IMAGE_TAG}'
             }
         }
-
+        
         stage('Configure kubectl') {
             steps {
-                sh 'aws eks --region ${AWS_REGION} update-kubeconfig --name ${demo-eks}'
+                sh 'aws eks --region ${AWS_REGION} update-kubeconfig --name ${EKS_CLUSTER_NAME}'
             }
         }
         
