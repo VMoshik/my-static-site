@@ -1,19 +1,20 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: demo-nginx
+  name: custom-website
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: demo-nginx
+      app: custom-website
   template:
     metadata:
       labels:
-        app: demo-nginx
+        app: custom-website
     spec:
       containers:
-      - name: nginx
-        image: nginx:alpine
+      - name: custom-website-container
+        image: 547694239239.dkr.ecr.ap-southeast-1.amazonaws.com/caringup_demo:latest
         ports:
         - containerPort: 80
+        imagePullPolicy: Always
