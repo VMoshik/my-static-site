@@ -2,29 +2,38 @@ version: 0.2
 
 env:
   variables:
-    IMAGE_REPO_NAME: caringup_demo
-    IMAGE_TAG: latest.v1
     AWS_REGION: ap-southeast-1
-    ACCOUNT_ID: 547694239239
+    EKS_CLUSTER_NAME: caringup-eks-cluster
+    REPO_URI: 547694239239.dkr.ecr.ap-southeast-1.amazonaws.com/caringup_demo
+  git-credential-helper: yes
 
 phases:
   pre_build:
     commands:
       - echo Logging in to Amazon ECR...
-      - aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com
-      - IMAGE_URI=$ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/$IMAGE_REPO_NAME:$IMAGE_TAG
+      - aws --version
+      - $(aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $REPO_URI)
+      - IMAGE_TAG=$(echo $CODEBUILD_RESOLVED_SOURCE_VERSION | cut -c 1-7)
+      - echo Image tag will be $IMAGE_TAG
+
   build:
     commands:
       - echo Building the Docker image...
-      - docker build -t $IMAGE_REPO_NAME .
-      - docker tag $IMAGE_REPO_NAME:latest $IMAGE_URI
+      - docker build -t caringup_demo .
+      - docker tag caringup_demo:latest $REPO_URI:$IMAGE_TAG
+      - docker tag caringup_demo:latest $REPO_URI:latest
+
   post_build:
     commands:
-      - echo Pushing image to ECR...
-      - docker push $IMAGE_URI
-      - echo Creating imagedefinitions.json for deployment...
-      - printf '[{"name":"app-container","imageUri":"%s"}]' $IMAGE_URI > imagedefinitions.json
+      - echo Pushing Docker image to ECR...
+      - docker push $REPO_URI:$IMAGE_TAG
+      - docker push $REPO_URI:latest
+      - echo Updating deployment manifest with image $REPO_URI:$IMAGE_TAG ...
+      - sed -i "s|image:.*|image: $REPO_URI:$IMAGE_TAG|" deployment-codepipeline.yaml
+      - echo Updating kubeconfig and deploying to EKS...
+      - aws eks update-kubeconfig --region $AWS_REGION --name $EKS_CLUSTER_NAME
+      - kubectl apply -f deployment-codepipeline.yaml
 
 artifacts:
   files:
-    - imagedefinitions.json
+    - deployment-codepipeline.yaml
