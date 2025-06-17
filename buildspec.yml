@@ -5,27 +5,22 @@ env:
     AWS_DEFAULT_REGION: ap-southeast-1
     REPOSITORY_URI: 547694239239.dkr.ecr.ap-southeast-1.amazonaws.com/caringup_demo
     IMAGE_TAG: latest
-    EKS_CLUSTER_NAME: demo-eks
-    NAMESPACE: demo  # Change if your deployment is in a different namespace
 
 phases:
   pre_build:
     commands:
       - echo Logging in to Amazon ECR...
       - aws ecr get-login-password --region $AWS_DEFAULT_REGION | docker login --username AWS --password-stdin $REPOSITORY_URI
-
   build:
     commands:
       - echo Building Docker image...
       - docker build -t caringup_demo .
       - docker tag caringup_demo:latest $REPOSITORY_URI:$IMAGE_TAG
-
   post_build:
     commands:
       - echo Pushing Docker image to ECR...
       - docker push $REPOSITORY_URI:$IMAGE_TAG
       - echo Updating deployment on EKS...
-      - aws eks update-kubeconfig --region $AWS_DEFAULT_REGION --name $EKS_CLUSTER_NAME
-      - kubectl set image deployment/caringup-demo caringup-demo-container=$REPOSITORY_URI:$IMAGE_TAG -n $NAMESPACE
-      - echo Waiting for rollout to complete...
-      - kubectl rollout status deployment/caringup-demo -n $NAMESPACE
+      - aws eks update-kubeconfig --region $AWS_DEFAULT_REGION --name demo-eks
+      - kubectl apply -f deployment-codepipeline.yaml
+      - kubectl apply -f service-codepipeline.yaml
