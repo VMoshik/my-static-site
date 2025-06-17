@@ -20,3 +20,4 @@ spec:
           image: 547694239239.dkr.ecr.ap-southeast-1.amazonaws.com/caringup_demo:latest
           ports:
             - containerPort: 80
+            
