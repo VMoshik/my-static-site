@@ -2,38 +2,24 @@ version: 0.2
 
 env:
   variables:
-    AWS_REGION: ap-southeast-1
-    EKS_CLUSTER_NAME: caringup-eks-cluster
-    REPO_URI: 547694239239.dkr.ecr.ap-southeast-1.amazonaws.com/caringup_demo
-  git-credential-helper: yes
+    AWS_DEFAULT_REGION: ap-southeast-1
+    REPOSITORY_URI: 547694239239.dkr.ecr.ap-southeast-1.amazonaws.com/caringup_demo
+    IMAGE_TAG: latest
 
 phases:
   pre_build:
     commands:
       - echo Logging in to Amazon ECR...
-      - aws --version
-      - $(aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $REPO_URI)
-      - IMAGE_TAG=$(echo $CODEBUILD_RESOLVED_SOURCE_VERSION | cut -c 1-7)
-      - echo Image tag will be $IMAGE_TAG
-
+      - aws ecr get-login-password --region $AWS_DEFAULT_REGION | docker login --username AWS --password-stdin $REPOSITORY_URI
   build:
     commands:
-      - echo Building the Docker image...
+      - echo Building Docker image...
       - docker build -t caringup_demo .
-      - docker tag caringup_demo:latest $REPO_URI:$IMAGE_TAG
-      - docker tag caringup_demo:latest $REPO_URI:latest
-
+      - docker tag caringup_demo:latest $REPOSITORY_URI:$IMAGE_TAG
   post_build:
     commands:
       - echo Pushing Docker image to ECR...
-      - docker push $REPO_URI:$IMAGE_TAG
-      - docker push $REPO_URI:latest
-      - echo Updating deployment manifest with image $REPO_URI:$IMAGE_TAG ...
-      - sed -i "s|image:.*|image: $REPO_URI:$IMAGE_TAG|" deployment-codepipeline.yaml
-      - echo Updating kubeconfig and deploying to EKS...
-      - aws eks update-kubeconfig --region $AWS_REGION --name $EKS_CLUSTER_NAME
-      - kubectl apply -f deployment-codepipeline.yaml
-
-artifacts:
-  files:
-    - deployment-codepipeline.yaml
+      - docker push $REPOSITORY_URI:$IMAGE_TAG
+      - echo Updating deployment on EKS...
+      - aws eks update-kubeconfig --region $AWS_DEFAULT_REGION --name demo-eks
+      - kubectl set image deployment/caringup-demo caringup-demo-container=$REPOSITORY_URI:$IMAGE_TAG
