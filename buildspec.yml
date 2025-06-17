@@ -1,30 +1,30 @@
 version: 0.2
 
+env:
+  variables:
+    IMAGE_REPO_NAME: caringup_demo
+    IMAGE_TAG: latest.v1
+    AWS_REGION: ap-southeast-1
+    ACCOUNT_ID: 547694239239
+
 phases:
   pre_build:
     commands:
       - echo Logging in to Amazon ECR...
-      - aws --version
-      - REPO_URI=547694239239.dkr.ecr.ap-southeast-1.amazonaws.com/caringup_demo
-      - IMAGE_TAG=$(echo $CODEBUILD_RESOLVED_SOURCE_VERSION | cut -c 1-7)
-      - aws ecr get-login-password --region ap-southeast-1 | docker login --username AWS --password-stdin $REPO_URI
-
+      - aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com
+      - IMAGE_URI=$ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/$IMAGE_REPO_NAME:$IMAGE_TAG
   build:
     commands:
       - echo Building the Docker image...
-      - docker build -t $REPO_URI:$IMAGE_TAG .
-      - docker push $REPO_URI:$IMAGE_TAG
-
+      - docker build -t $IMAGE_REPO_NAME .
+      - docker tag $IMAGE_REPO_NAME:latest $IMAGE_URI
   post_build:
     commands:
-      - echo Updating deployment manifest...
-      - sed -i "s|image:.*|image: $REPO_URI:$IMAGE_TAG|" deployment-codepipeline.yaml
-      - echo Creating namespace if not exists...
-      - kubectl create namespace caringup-codepipeline || true
-      - echo Applying Kubernetes manifests...
-      - kubectl apply -f deployment-codepipeline.yaml -n caringup-codepipeline
-      - kubectl apply -f service-codepipeline.yaml -n caringup-codepipeline
+      - echo Pushing image to ECR...
+      - docker push $IMAGE_URI
+      - echo Creating imagedefinitions.json for deployment...
+      - printf '[{"name":"app-container","imageUri":"%s"}]' $IMAGE_URI > imagedefinitions.json
 
 artifacts:
   files:
-    - '**/*'
+    - imagedefinitions.json
