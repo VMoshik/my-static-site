@@ -2,8 +2,8 @@ pipeline {
     agent any
 
     environment {
-        AWS_ACCOUNT_ID = ''
-        AWS_REGION = ''
+        AWS_ACCOUNT_ID = '547694239239'
+        AWS_REGION = 'ap-south-east-1'
         ECR_REPO = "${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/caringup_demo"
         IMAGE_TAG = 'latest'
         EKS_CLUSTER_NAME = 'demo-eks'   // updated here
