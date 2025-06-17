@@ -17,10 +17,9 @@ phases:
       - docker build -t caringup_demo .
       - docker tag caringup_demo:latest $REPOSITORY_URI:$IMAGE_TAG
   post_build:
-    commands:
-      - echo Pushing Docker image to ECR...
-      - docker push $REPOSITORY_URI:$IMAGE_TAG
-      - echo Updating deployment on EKS...
-      - aws eks update-kubeconfig --region $AWS_DEFAULT_REGION --name demo-eks
-      - kubectl apply -f deployment-codepipeline.yaml
-      - kubectl apply -f service-codepipeline.yaml
+  commands:
+    - echo Updating deployment on EKS...
+    - aws eks update-kubeconfig --region $AWS_DEFAULT_REGION --name demo-eks
+    - kubectl create namespace demo --dry-run=client -o yaml | kubectl apply -f -
+    - kubectl apply -f deployment-codepipeline.yaml
+    - kubectl apply -f service-codepipeline.yaml
