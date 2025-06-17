@@ -1,23 +1,22 @@
-version: 0.2
-
-phases:
-  pre_build:
-    commands:
-      - echo Logging in to Amazon ECR...
-      - aws --version
-      - REPO_URI=547694239239.dkr.ecr.ap-southeast-1.amazonaws.com/caringup_demo
-      - IMAGE_TAG=$(echo $CODEBUILD_RESOLVED_SOURCE_VERSION | cut -c 1-7)
-      - aws ecr get-login-password --region ap-southeast-1 | docker login --username AWS --password-stdin $REPO_URI
-  build:
-    commands:
-      - echo Building the Docker image...
-      - docker build -t $REPO_URI:$IMAGE_TAG .
-      - docker push $REPO_URI:$IMAGE_TAG
-  post_build:
-    commands:
-      - echo Updating deployment manifest...
-      - sed -i "s|image:.*|image: $REPO_URI:$IMAGE_TAG|" deployment-codepipeline.yaml
-      - kubectl apply -f deployment-codepipeline.yaml
-artifacts:
-  files:
-    - '**/*'
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: caringup-deployment
+  namespace: caringup
+  labels:
+    app: caringup
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: caringup
+  template:
+    metadata:
+      labels:
+        app: caringup
+    spec:
+      containers:
+        - name: caringup
+          image: 547694239239.dkr.ecr.ap-southeast-1.amazonaws.com/caringup_demo:latest
+          ports:
+            - containerPort: 80
