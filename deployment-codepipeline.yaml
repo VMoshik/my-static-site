@@ -2,7 +2,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: caringup-demo
-  namespace: demo  # Change if needed
+  namespace: demo
   labels:
     app: caringup-demo
 spec:
@@ -20,10 +20,3 @@ spec:
           image: 547694239239.dkr.ecr.ap-southeast-1.amazonaws.com/caringup_demo:latest
           ports:
             - containerPort: 80
-          resources:
-            limits:
-              cpu: "250m"
-              memory: "256Mi"
-            requests:
-              cpu: "100m"
-              memory: "128Mi"
